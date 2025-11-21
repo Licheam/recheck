@@ -1,17 +1,20 @@
 package codes.quine.labs.recheck.cli
 import java.time.LocalDateTime
 import scala.concurrent.duration.Duration
+import scala.io.Source
 
 import cats.syntax.apply._
 import cats.syntax.semigroupk._
 import com.monovore.decline.Command
 import com.monovore.decline.Opts
+import io.circe.syntax._
 
 import codes.quine.labs.recheck.ReDoS
 import codes.quine.labs.recheck.cli.Main.BatchAction
 import codes.quine.labs.recheck.cli.Main.CheckAction
 import codes.quine.labs.recheck.cli.Main.command
 import codes.quine.labs.recheck.cli.arguments._
+import codes.quine.labs.recheck.codec._
 import codes.quine.labs.recheck.common.AccelerationMode
 import codes.quine.labs.recheck.common.Checker
 import codes.quine.labs.recheck.common.Context
@@ -29,7 +32,15 @@ object Main {
   final case class BatchAction(threadSize: Int) extends Action
 
   /** CheckAction holds `recheck check` subcommand parameters. */
-  final case class CheckAction(pattern: InputPattern, params: Parameters) extends Action
+  final case class CheckAction(pattern: InputPattern, params: Parameters, format: OutputFormat) extends Action
+
+  /** OutputFormat specifies the output format for diagnostics */
+  sealed abstract class OutputFormat extends Product with Serializable
+
+  object OutputFormat {
+    case object Text extends OutputFormat
+    case object JSON extends OutputFormat
+  }
 
   /** A command-line definition of `recheck`. */
   def command: Command[Action] =
@@ -209,6 +220,17 @@ object Main {
         )
         .withDefault(Parameters.DefaultTimeout)
 
+      val format = Opts
+        .option[String](
+          long = "format",
+          help = "Output format: text or json"
+        )
+        .withDefault("text")
+        .map {
+          case "json" => OutputFormat.JSON
+          case _      => OutputFormat.Text
+        }
+
       val params = (
         (
           accelerationMode,
@@ -295,8 +317,21 @@ object Main {
           )
       }
 
-      val pattern = Opts.argument[InputPattern](metavar = "pattern")
-      val check: Opts[Action] = (pattern, params).mapN(CheckAction)
+      val pattern = Opts.argument[InputPattern](metavar = "pattern").orNone
+      val check: Opts[Action] = (pattern, params, format).mapN { (patternOpt, params, format) =>
+        val pattern = patternOpt.getOrElse {
+          // 从stdin读取pattern
+          val input = Source.stdin.mkString
+          // 使用InputPattern的argument实例来解析输入
+          InputPattern.argument.read(input) match {
+            case cats.data.Validated.Valid(p)   => p
+            case cats.data.Validated.Invalid(e) =>
+              // 如果解析失败，默认认为整个输入是source，flags为空
+              InputPattern(input, "")
+          }
+        }
+        CheckAction(pattern, params, format)
+      }
 
       val agent: Opts[Action] = Opts.subcommand(name = "agent", help = "Starts the batch mode.") {
         val threadSize = Opts
@@ -327,7 +362,10 @@ class Main {
 
     case Right(action: CheckAction) =>
       val diagnostics = ReDoS.check(action.pattern.source, action.pattern.flags, action.params)
-      Console.out.println(diagnostics)
+      action.format match {
+        case Main.OutputFormat.JSON => Console.out.println(diagnostics.asJson.noSpaces)
+        case Main.OutputFormat.Text => Console.out.println(diagnostics)
+      }
       diagnostics match {
         case _: Diagnostics.Safe                                => () // skip
         case _: Diagnostics.Vulnerable | _: Diagnostics.Unknown => exit(1)
