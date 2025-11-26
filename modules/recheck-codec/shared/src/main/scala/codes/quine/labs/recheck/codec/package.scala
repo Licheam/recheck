@@ -37,13 +37,21 @@ package object codec {
         "complexity" := complexity.asInstanceOf[AttackComplexity]
       )
     case Diagnostics.Vulnerable(source, flags, complexity, attack, hotspot, checker) =>
+      // Custom encoder for attack pattern that excludes the "string" field
+      val attackWithoutString = Json.obj(
+        "pumps" := Json.arr(attack.pumps.map { case (p, s, n) => Json.obj("prefix" := p, "pump" := s, "bias" := n) }: _*),
+        "suffix" := attack.suffix,
+        "base" := attack.n,
+        "pattern" := attack.toString
+      )
+      
       Json.obj(
         "source" := source,
         "flags" := flags,
         "status" := "vulnerable",
         "checker" := checker,
         "complexity" := complexity.asInstanceOf[AttackComplexity],
-        "attack" := attack,
+        "attack" := attackWithoutString,
         "hotspot" := hotspot
       )
     case Diagnostics.Unknown(source, flags, error, checker) =>
