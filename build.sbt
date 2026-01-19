@@ -391,8 +391,8 @@ lazy val cli = project
     Compile / mainClass := Some("codes.quine.labs.recheck.cli.Main"),
     assembly / mainClass := (Compile / mainClass).value,
     assembly / assemblyJarName := "recheck.jar",
-    nativeImageVersion := "22.3.0",
-    nativeImageJvm := "graalvm-java17",
+    nativeImageVersion := "21.0.2",
+    nativeImageJvm := "graalvm-java21",
     nativeImageOptions ++= List(
       "--no-fallback",
       "--initialize-at-build-time=java",
