@@ -41,12 +41,12 @@ given encodeDiagnostics: Encoder[Diagnostics] with
     case Diagnostics.Vulnerable(source, flags, complexity, attack, hotspot, checker) =>
       // Custom encoder for attack pattern that excludes the "string" field
       val attackWithoutString = Json.obj(
-        "pumps" := Json.arr(attack.pumps.map { case (p, s, n) => Json.obj("prefix" := p, "pump" := s, "bias" := n) }: _*),
+        "pumps" := Json.arr(attack.pumps.map { case (p, s, n) => Json.obj("prefix" := p, "pump" := s, "bias" := n) }*),
         "suffix" := attack.suffix,
         "base" := attack.n,
         "pattern" := attack.toString
       )
-      
+
       Json.obj(
         "source" := source,
         "flags" := flags,
