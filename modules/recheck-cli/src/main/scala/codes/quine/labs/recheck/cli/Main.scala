@@ -3,8 +3,8 @@ import java.time.LocalDateTime
 import scala.concurrent.duration.Duration
 import scala.io.Source
 
-import cats.syntax.apply._
-import cats.syntax.semigroupk._
+import cats.syntax.apply.*
+import cats.syntax.semigroupk.*
 import com.monovore.decline.Command
 import com.monovore.decline.Opts
 import io.circe.syntax._
@@ -13,7 +13,7 @@ import codes.quine.labs.recheck.ReDoS
 import codes.quine.labs.recheck.cli.Main.BatchAction
 import codes.quine.labs.recheck.cli.Main.CheckAction
 import codes.quine.labs.recheck.cli.Main.command
-import codes.quine.labs.recheck.cli.arguments._
+import codes.quine.labs.recheck.cli.arguments.given
 import codes.quine.labs.recheck.codec._
 import codes.quine.labs.recheck.common.AccelerationMode
 import codes.quine.labs.recheck.common.Checker
@@ -23,7 +23,7 @@ import codes.quine.labs.recheck.common.Seeder
 import codes.quine.labs.recheck.diagnostics.Diagnostics
 
 /** Main provides the entrypoint of `recheck` command. */
-object Main {
+object Main:
 
   /** Action is a subcommand of `recheck` command. */
   sealed abstract class Action extends Product with Serializable
@@ -44,7 +44,7 @@ object Main {
 
   /** A command-line definition of `recheck`. */
   def command: Command[Action] =
-    Command(name = "recheck", header = "Checks ReDoS vulnerability on the given RegExp pattern") {
+    Command(name = "recheck", header = "Checks ReDoS vulnerability on the given RegExp pattern"):
       val accelerationMode = Opts
         .option[AccelerationMode](
           long = "acceleration-mode",
@@ -96,14 +96,13 @@ object Main {
       val logger = Opts
         .flag(long = "enable-log", help = "Enable logging.")
         .orFalse
-        .map {
+        .map:
           case true =>
             Some[Context.Logger] { message =>
               val date = LocalDateTime.now()
               Console.out.println(s"[$date] $message")
             }
           case false => None
-        }
       val maxAttackStringSize = Opts
         .option[Int](
           long = "max-attack-string-size",
@@ -257,7 +256,7 @@ object Main {
           maxSimpleRepeatCount
         ).tupled,
         (mutationSize, randomSeed, recallLimit, recallTimeout, seeder, seedingLimit, seedingTimeout, timeout).tupled
-      ).mapN {
+      ).mapN:
         case (
               (
                 accelerationMode,
@@ -315,7 +314,6 @@ object Main {
             seedingTimeout,
             timeout
           )
-      }
 
       val pattern = Opts.argument[InputPattern](metavar = "pattern").orNone
       val check: Opts[Action] = (pattern, params, format).mapN { (patternOpt, params, format) =>
@@ -333,45 +331,39 @@ object Main {
         CheckAction(pattern, params, format)
       }
 
-      val agent: Opts[Action] = Opts.subcommand(name = "agent", help = "Starts the batch mode.") {
+      val agent: Opts[Action] = Opts.subcommand(name = "agent", help = "Starts the batch mode."):
         val threadSize = Opts
           .option[Int](long = "thread-size", short = "t", help = "A number of thread for processing")
           .withDefault(sys.runtime.availableProcessors())
 
         threadSize.map(BatchAction.apply)
-      }
 
       agent <+> check
-    }
 
   // $COVERAGE-OFF$
   /** An entrypoint of `recheck` command. */
   def main(args: Array[String]): Unit = new Main().run(args)
   // $COVERAGE-ON$
-}
 
-class Main {
+class Main:
+
   // $COVERAGE-OFF$
   def exit(exitCode: Int): Unit = sys.exit(exitCode)
   // $COVERAGE-ON$
 
-  def run(args: Array[String]): Unit = command.parse(args.toSeq, sys.env) match {
+  def run(args: Array[String]): Unit = command.parse(args.toSeq, sys.env) match
     case Left(help) =>
       Console.err.println(help.toString)
       exit(2)
 
     case Right(action: CheckAction) =>
       val diagnostics = ReDoS.check(action.pattern.source, action.pattern.flags, action.params)
-      action.format match {
+      action.format match
         case Main.OutputFormat.JSON => Console.out.println(diagnostics.asJson.noSpaces)
         case Main.OutputFormat.Text => Console.out.println(diagnostics)
-      }
-      diagnostics match {
+      diagnostics match
         case _: Diagnostics.Safe                                => () // skip
         case _: Diagnostics.Vulnerable | _: Diagnostics.Unknown => exit(1)
-      }
 
     case Right(action: BatchAction) =>
       new AgentCommand(action.threadSize).run()
-  }
-}

@@ -29,7 +29,7 @@
   "sideEffects": false,
   "types": "index.d.ts",
   "dependencies": {
-    "synckit": "0.11.11"
+    "synckit": "0.11.12"
   },
   "optionalDependencies": {
     "recheck-jar": "0.0.0",
@@ -41,12 +41,12 @@
   },
   "devDependencies": {
     "@types/jest": "30.0.0",
-    "@types/node": "24.10.1",
-    "esbuild": "0.27.0",
+    "@types/node": "24.10.9",
+    "esbuild": "0.27.2",
     "esbuild-jest": "0.5.0",
     "esbuild-register": "3.6.0",
     "jest": "30.2.0",
-    "prettier": "3.6.2",
+    "prettier": "3.8.0",
     "rimraf": "6.1.2",
     "typescript": "5.9.3"
   },
