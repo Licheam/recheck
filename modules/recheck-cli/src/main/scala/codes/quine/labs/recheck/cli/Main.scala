@@ -14,7 +14,7 @@ import codes.quine.labs.recheck.cli.Main.BatchAction
 import codes.quine.labs.recheck.cli.Main.CheckAction
 import codes.quine.labs.recheck.cli.Main.command
 import codes.quine.labs.recheck.cli.arguments.given
-import codes.quine.labs.recheck.codec._
+import codes.quine.labs.recheck.codec.given
 import codes.quine.labs.recheck.common.AccelerationMode
 import codes.quine.labs.recheck.common.Checker
 import codes.quine.labs.recheck.common.Context
