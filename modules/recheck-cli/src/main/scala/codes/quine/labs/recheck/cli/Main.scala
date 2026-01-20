@@ -362,8 +362,8 @@ class Main:
         case Main.OutputFormat.JSON => Console.out.println(diagnostics.asJson.noSpaces)
         case Main.OutputFormat.Text => Console.out.println(diagnostics)
       diagnostics match
-        case _: Diagnostics.Safe                                => () // skip
-        case _: Diagnostics.Vulnerable | _: Diagnostics.Unknown => exit(1)
+        case _: Diagnostics.Safe | _: Diagnostics.Vulnerable => () // skip
+        case _: Diagnostics.Unknown                          => exit(1)
 
     case Right(action: BatchAction) =>
       new AgentCommand(action.threadSize).run()
